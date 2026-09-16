@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="demo_account_facebook" model="social.media.account">
+        <field name="name">Acme Facebook Page</field>
+        <field name="platform">facebook</field>
+        <field name="handle">@acme</field>
+        <field name="state">connected</field>
+    </record>
+
+    <record id="demo_account_instagram" model="social.media.account">
+        <field name="name">Acme Instagram</field>
+        <field name="platform">instagram</field>
+        <field name="handle">@acme.official</field>
+        <field name="state">connected</field>
+    </record>
+
+    <record id="demo_account_linkedin" model="social.media.account">
+        <field name="name">Acme LinkedIn Company Page</field>
+        <field name="platform">linkedin</field>
+        <field name="handle">acme-inc</field>
+        <field name="state">disconnected</field>
+    </record>
+
+    <record id="demo_campaign_launch" model="social.media.campaign">
+        <field name="name">Product Launch</field>
+        <field name="date_start" eval="(datetime.today()).strftime('%Y-%m-%d')"/>
+        <field name="date_end" eval="(datetime.today() + relativedelta(days=30)).strftime('%Y-%m-%d')"/>
+        <field name="state">in_progress</field>
+        <field name="description"><![CDATA[<p>Cross-channel announcement of the new product line.</p>]]></field>
+    </record>
+
+    <record id="demo_post_published_1" model="social.media.post">
+        <field name="account_id" ref="demo_account_facebook"/>
+        <field name="campaign_id" ref="demo_campaign_launch"/>
+        <field name="message">We're excited to announce our newest product line! #launch</field>
+        <field name="state">published</field>
+        <field name="scheduled_date" eval="(datetime.today() - relativedelta(days=2)).strftime('%Y-%m-%d %H:%M:%S')"/>
+        <field name="published_date" eval="(datetime.today() - relativedelta(days=2)).strftime('%Y-%m-%d %H:%M:%S')"/>
+        <field name="like_count">128</field>
+        <field name="comment_count">14</field>
+        <field name="share_count">22</field>
+        <field name="click_count">301</field>
+    </record>
+
+    <record id="demo_post_scheduled_1" model="social.media.post">
+        <field name="account_id" ref="demo_account_instagram"/>
+        <field name="campaign_id" ref="demo_campaign_launch"/>
+        <field name="message">Behind the scenes of our launch shoot 📸</field>
+        <field name="state">scheduled</field>
+        <field name="scheduled_date" eval="(datetime.today() + relativedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')"/>
+    </record>
+
+    <record id="demo_post_draft_1" model="social.media.post">
+        <field name="account_id" ref="demo_account_facebook"/>
+        <field name="campaign_id" ref="demo_campaign_launch"/>
+        <field name="message">Draft: customer testimonial round-up, needs review before scheduling.</field>
+        <field name="state">draft</field>
+    </record>
+</odoo>

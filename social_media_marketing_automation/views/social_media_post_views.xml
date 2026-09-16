@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_social_media_post_list" model="ir.ui.view">
+        <field name="name">social.media.post.list</field>
+        <field name="model">social.media.post</field>
+        <field name="arch" type="xml">
+            <list string="Social Media Posts" decoration-danger="state == 'failed'" decoration-muted="state == 'cancelled'">
+                <field name="name"/>
+                <field name="account_id"/>
+                <field name="platform"/>
+                <field name="campaign_id"/>
+                <field name="scheduled_date"/>
+                <field name="state" widget="badge" decoration-success="state == 'published'" decoration-danger="state == 'failed'" decoration-info="state == 'scheduled'"/>
+                <field name="engagement_count" sum="Total"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_social_media_post_form" model="ir.ui.view">
+        <field name="name">social.media.post.form</field>
+        <field name="model">social.media.post</field>
+        <field name="arch" type="xml">
+            <form string="Social Media Post">
+                <header>
+                    <button
+                        name="action_schedule"
+                        string="Schedule"
+                        type="object"
+                        class="oe_highlight"
+                        invisible="state != 'draft'"
+                    />
+                    <button
+                        name="action_publish_now"
+                        string="Publish Now"
+                        type="object"
+                        class="oe_highlight"
+                        invisible="state not in ('draft', 'scheduled', 'failed')"
+                    />
+                    <button
+                        name="action_reset_to_draft"
+                        string="Reset to Draft"
+                        type="object"
+                        invisible="state not in ('scheduled', 'failed', 'cancelled')"
+                    />
+                    <button
+                        name="action_cancel"
+                        string="Cancel"
+                        type="object"
+                        invisible="state in ('published', 'cancelled')"
+                    />
+                    <field
+                        name="state"
+                        widget="statusbar"
+                        statusbar_visible="draft,scheduled,published"
+                    />
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Post title"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="account_id"/>
+                            <field name="platform" invisible="1"/>
+                            <field name="campaign_id"/>
+                            <field name="company_id" groups="base.group_multi_company" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="scheduled_date"/>
+                            <field name="published_date" invisible="not published_date"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="message" placeholder="What do you want to share?"/>
+                        <field name="image" widget="image" class="oe_avatar"/>
+                        <field name="link_url" widget="url"/>
+                    </group>
+                    <group string="Error" invisible="state != 'failed'">
+                        <field name="error_message" readonly="1" nolabel="1" colspan="2"/>
+                    </group>
+                    <group string="Engagement" invisible="state != 'published'">
+                        <group>
+                            <field name="like_count"/>
+                            <field name="comment_count"/>
+                        </group>
+                        <group>
+                            <field name="share_count"/>
+                            <field name="click_count"/>
+                            <field name="engagement_count"/>
+                        </group>
+                    </group>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_social_media_post_kanban" model="ir.ui.view">
+        <field name="name">social.media.post.kanban</field>
+        <field name="model">social.media.post</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_small_column">
+                <field name="name"/>
+                <field name="account_id"/>
+                <field name="scheduled_date"/>
+                <field name="state"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_global_click">
+                            <strong><field name="name"/></strong>
+                            <div class="text-muted">
+                                <field name="account_id"/>
+                            </div>
+                            <div>
+                                <field name="scheduled_date"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_social_media_post_calendar" model="ir.ui.view">
+        <field name="name">social.media.post.calendar</field>
+        <field name="model">social.media.post</field>
+        <field name="arch" type="xml">
+            <calendar
+                string="Content Calendar"
+                date_start="scheduled_date"
+                color="account_id"
+                mode="month"
+                event_limit="5"
+            >
+                <field name="name"/>
+                <field name="account_id"/>
+                <field name="state"/>
+            </calendar>
+        </field>
+    </record>
+
+    <record id="view_social_media_post_search" model="ir.ui.view">
+        <field name="name">social.media.post.search</field>
+        <field name="model">social.media.post</field>
+        <field name="arch" type="xml">
+            <search string="Search Posts">
+                <field name="name"/>
+                <field name="account_id"/>
+                <field name="campaign_id"/>
+                <field name="message"/>
+                <filter string="Draft" name="draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Scheduled" name="scheduled" domain="[('state', '=', 'scheduled')]"/>
+                <filter string="Published" name="published" domain="[('state', '=', 'published')]"/>
+                <filter string="Failed" name="failed" domain="[('state', '=', 'failed')]"/>
+                <separator/>
+                <filter
+                    string="Scheduled Date"
+                    name="scheduled_date"
+                    date="scheduled_date"
+                />
+                <group expand="0" string="Group By">
+                    <filter string="Account" name="group_account" context="{'group_by': 'account_id'}"/>
+                    <filter string="Campaign" name="group_campaign" context="{'group_by': 'campaign_id'}"/>
+                    <filter string="Platform" name="group_platform" context="{'group_by': 'platform'}"/>
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_social_media_post" model="ir.actions.act_window">
+        <field name="name">Posts</field>
+        <field name="res_model">social.media.post</field>
+        <field name="view_mode">kanban,list,calendar,form</field>
+        <field name="context">{'search_default_group_state': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first social media post
+            </p>
+            <p>
+                Draft a message, schedule it and let the automation publish it for you.
+            </p>
+        </field>
+    </record>
+</odoo>

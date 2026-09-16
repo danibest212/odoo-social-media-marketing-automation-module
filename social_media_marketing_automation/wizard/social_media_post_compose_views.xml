@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_social_media_post_compose_form" model="ir.ui.view">
+        <field name="name">social.media.post.compose.form</field>
+        <field name="model">social.media.post.compose</field>
+        <field name="arch" type="xml">
+            <form string="Compose Social Media Post">
+                <group>
+                    <field name="message" placeholder="What do you want to share?"/>
+                    <field name="image" widget="image" class="oe_avatar"/>
+                    <field name="link_url" placeholder="https://..."/>
+                    <field name="campaign_id"/>
+                    <field name="account_ids" widget="many2many_tags"/>
+                    <field name="scheduled_date"/>
+                </group>
+                <footer>
+                    <button
+                        name="action_create_posts"
+                        string="Create Posts"
+                        type="object"
+                        class="btn-primary"
+                    />
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_social_media_post_compose" model="ir.actions.act_window">
+        <field name="name">Compose Post</field>
+        <field name="res_model">social.media.post.compose</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>
