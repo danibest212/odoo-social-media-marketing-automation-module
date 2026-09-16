@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_social_media_automation_settings_form" model="ir.ui.view">
+        <field name="name">social.media.automation.settings.form</field>
+        <field name="model">social.media.automation.settings</field>
+        <field name="arch" type="xml">
+            <form string="n8n Automation Settings">
+                <p>
+                    Connect an <b>n8n</b> instance to automate content generation (via AI)
+                    and publishing across all your configured social media accounts.
+                    See the <code>n8n/</code> folder in this module's repository for
+                    ready-to-import workflow templates and full setup instructions.
+                </p>
+                <group>
+                    <field name="n8n_ai_webhook_url" placeholder="https://your-n8n-instance/webhook/social-media-generate-content"/>
+                    <field name="api_key" password="True" placeholder="A long random secret"/>
+                </group>
+                <footer>
+                    <button
+                        name="action_save"
+                        string="Save"
+                        type="object"
+                        class="btn-primary"
+                    />
+                    <button string="Discard" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_social_media_automation_settings" model="ir.actions.act_window">
+        <field name="name">Automation Settings</field>
+        <field name="res_model">social.media.automation.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

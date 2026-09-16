@@ -1,0 +1,139 @@
+{
+  "name": "Social Media - Auto Publish (All Platforms)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Setup\n1. Set these n8n environment variables (Settings > Environments, or your `.env`):\n   - `ODOO_BASE_URL` (e.g. https://mycompany.odoo.com)\n   - `SOCIAL_MEDIA_API_KEY` (must match the Shared API Key saved in Odoo's Automation Settings)\n   - Platform credentials referenced in the \"Build Platform Request\" node: `FACEBOOK_PAGE_ID`, `FACEBOOK_PAGE_ACCESS_TOKEN`, `INSTAGRAM_ACCOUNT_ID`, `INSTAGRAM_ACCESS_TOKEN`, `LINKEDIN_ORG_ID`, etc.\n2. The \"Call Platform API\" node is a single generic HTTP node for all platforms (URL/method/body come from the Code node before it). Replace it with per-platform branches using n8n's OAuth2 credential nodes if you want proper token refresh instead of long-lived env-var tokens.\n3. Each platform's request shape is a best-effort placeholder — double check against that platform's current API docs before going live; they change.\n4. **Important**: if you use this workflow, deactivate Odoo's built-in \"Social Media Marketing: Publish Scheduled Posts\" scheduled action (Settings > Technical > Automation > Scheduled Actions) so the two don't race to publish the same post.",
+        "height": 480,
+        "width": 420
+      },
+      "id": "sticky-1",
+      "name": "Setup Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-620, 40]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "minutes", "minutesInterval": 15 }]
+        }
+      },
+      "id": "schedule-1",
+      "name": "Every 15 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-160, 260]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.ODOO_BASE_URL }}/social_media/webhook/posts/due",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-Api-Key", "value": "={{ $env.SOCIAL_MEDIA_API_KEY }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "http-get-due-1",
+      "name": "Get Due Posts from Odoo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [80, 260]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "posts",
+        "options": {}
+      },
+      "id": "split-out-1",
+      "name": "Split Out Posts",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [320, 260]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.item.json;\nconst platform = item.platform;\nconst message = item.message;\nconst hashtags = (item.hashtags || []).map((h) => '#' + h).join(' ');\nconst text = hashtags ? `${message}\\n\\n${hashtags}` : message;\n\n// TODO: replace these placeholder URLs/bodies with your real, tested platform\n// API calls. Prefer n8n's own OAuth2 credential nodes over long-lived tokens\n// in environment variables for production use.\nconst requestsByPlatform = {\n  facebook: {\n    method: 'POST',\n    url: `https://graph.facebook.com/v19.0/${$env.FACEBOOK_PAGE_ID}/feed`,\n    body: { message: text, access_token: $env.FACEBOOK_PAGE_ACCESS_TOKEN },\n  },\n  instagram: {\n    // Instagram requires a 2-step Graph API flow (create a media container,\n    // then publish it). This placeholder only covers step 1 - split this\n    // into two HTTP nodes for a real implementation.\n    method: 'POST',\n    url: `https://graph.facebook.com/v19.0/${$env.INSTAGRAM_ACCOUNT_ID}/media`,\n    body: { caption: text, access_token: $env.INSTAGRAM_ACCESS_TOKEN },\n  },\n  twitter: {\n    method: 'POST',\n    url: 'https://api.twitter.com/2/tweets',\n    body: { text },\n  },\n  linkedin: {\n    method: 'POST',\n    url: 'https://api.linkedin.com/v2/ugcPosts',\n    body: {\n      author: `urn:li:organization:${$env.LINKEDIN_ORG_ID}`,\n      lifecycleState: 'PUBLISHED',\n      specificContent: {\n        'com.linkedin.ugc.ShareContent': {\n          shareCommentary: { text },\n          shareMediaCategory: 'NONE',\n        },\n      },\n      visibility: { 'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC' },\n    },\n  },\n  tiktok: {\n    method: 'POST',\n    url: 'https://open.tiktokapis.com/v2/post/publish/content/init/',\n    body: { post_info: { title: text } },\n  },\n  youtube: {\n    // The public YouTube Data API has no simple \"text post\" endpoint; wire\n    // this up to your own video/Shorts upload pipeline if you need it.\n    method: 'POST',\n    url: 'https://www.googleapis.com/youtube/v3/videos',\n    body: { snippet: { description: text } },\n  },\n};\n\nconst request = requestsByPlatform[platform];\nif (!request) {\n  throw new Error(`No API mapping configured for platform \"${platform}\"`);\n}\n\nreturn [{\n  json: {\n    post_id: item.id,\n    callback_url: `${$env.ODOO_BASE_URL}/social_media/webhook/posts/${item.id}/result`,\n    request,\n  },\n}];"
+      },
+      "id": "code-build-request-1",
+      "name": "Build Platform Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [560, 260]
+    },
+    {
+      "parameters": {
+        "method": "={{ $json.request.method }}",
+        "url": "={{ $json.request.url }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.request.body) }}",
+        "options": {},
+        "continueOnFail": true
+      },
+      "id": "http-call-platform-1",
+      "name": "Call Platform API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [800, 260],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const context = $('Build Platform Request').item.json;\nconst current = $input.item.json;\nconst httpError = current.error;\n\nreturn [{\n  json: {\n    post_id: context.post_id,\n    callback_url: context.callback_url,\n    success: !httpError,\n    error: httpError ? String(httpError.message || httpError) : undefined,\n  },\n}];"
+      },
+      "id": "code-build-payload-1",
+      "name": "Build Result Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1040, 260]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.callback_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-Api-Key", "value": "={{ $env.SOCIAL_MEDIA_API_KEY }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ success: $json.success, error: $json.error }) }}",
+        "options": {}
+      },
+      "id": "http-report-result-1",
+      "name": "Report Result to Odoo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1280, 260]
+    }
+  ],
+  "connections": {
+    "Every 15 Minutes": {
+      "main": [[{ "node": "Get Due Posts from Odoo", "type": "main", "index": 0 }]]
+    },
+    "Get Due Posts from Odoo": {
+      "main": [[{ "node": "Split Out Posts", "type": "main", "index": 0 }]]
+    },
+    "Split Out Posts": {
+      "main": [[{ "node": "Build Platform Request", "type": "main", "index": 0 }]]
+    },
+    "Build Platform Request": {
+      "main": [[{ "node": "Call Platform API", "type": "main", "index": 0 }]]
+    },
+    "Call Platform API": {
+      "main": [[{ "node": "Build Result Payload", "type": "main", "index": 0 }]]
+    },
+    "Build Result Payload": {
+      "main": [[{ "node": "Report Result to Odoo", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}

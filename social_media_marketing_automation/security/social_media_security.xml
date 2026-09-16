@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="module_category_social_media" model="ir.module.category">
+        <field name="name">Social Marketing</field>
+        <field name="sequence">20</field>
+    </record>
+
+    <record id="group_social_media_user" model="res.groups">
+        <field name="name">User</field>
+        <field name="category_id" ref="module_category_social_media"/>
+    </record>
+
+    <record id="group_social_media_manager" model="res.groups">
+        <field name="name">Manager</field>
+        <field name="category_id" ref="module_category_social_media"/>
+        <field name="implied_ids" eval="[(4, ref('group_social_media_user'))]"/>
+        <field name="users" eval="[(4, ref('base.user_admin'))]"/>
+    </record>
+
+    <record id="social_media_account_rule_company" model="ir.rule">
+        <field name="name">Social Media Account: multi-company</field>
+        <field name="model_id" ref="model_social_media_account"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="social_media_campaign_rule_company" model="ir.rule">
+        <field name="name">Social Media Campaign: multi-company</field>
+        <field name="model_id" ref="model_social_media_campaign"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="social_media_post_rule_company" model="ir.rule">
+        <field name="name">Social Media Post: multi-company</field>
+        <field name="model_id" ref="model_social_media_post"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>
