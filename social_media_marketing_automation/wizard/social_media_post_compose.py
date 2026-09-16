@@ -62,6 +62,6 @@ class SocialMediaPostCompose(models.TransientModel):
             'name': _('Posts'),
             'type': 'ir.actions.act_window',
             'res_model': 'social.media.post',
-            'view_mode': 'list,form,calendar,kanban',
+            'view_mode': 'tree,form,calendar,kanban',
             'domain': [('id', 'in', posts.ids)],
         }

@@ -59,7 +59,7 @@ class SocialMediaCampaign(models.Model):
             'name': self.name,
             'type': 'ir.actions.act_window',
             'res_model': 'social.media.post',
-            'view_mode': 'list,form,calendar,kanban',
+            'view_mode': 'tree,form,calendar,kanban',
             'domain': [('campaign_id', '=', self.id)],
             'context': {'default_campaign_id': self.id},
         }

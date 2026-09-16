@@ -4,7 +4,7 @@
         <field name="name">social.media.account.list</field>
         <field name="model">social.media.account</field>
         <field name="arch" type="xml">
-            <list string="Social Media Accounts" decoration-muted="active == False">
+            <tree string="Social Media Accounts" decoration-muted="active == False">
                 <field name="name"/>
                 <field name="platform"/>
                 <field name="handle"/>
@@ -12,7 +12,8 @@
                 <field name="test_mode"/>
                 <field name="post_count"/>
                 <field name="company_id" groups="base.group_multi_company"/>
-            </list>
+                <field name="active" invisible="1"/>
+            </tree>
         </field>
     </record>
 
@@ -131,7 +132,7 @@
     <record id="action_social_media_account" model="ir.actions.act_window">
         <field name="name">Accounts</field>
         <field name="res_model">social.media.account</field>
-        <field name="view_mode">list,kanban,form</field>
+        <field name="view_mode">tree,kanban,form</field>
         <field name="context">{'search_default_connected': 0}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">

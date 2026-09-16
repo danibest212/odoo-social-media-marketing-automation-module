@@ -4,17 +4,17 @@
         <field name="name">social.media.hashtag.list</field>
         <field name="model">social.media.hashtag</field>
         <field name="arch" type="xml">
-            <list string="Hashtags" editable="bottom">
+            <tree string="Hashtags" editable="bottom">
                 <field name="name"/>
                 <field name="color" widget="color_picker"/>
-            </list>
+            </tree>
         </field>
     </record>
 
     <record id="action_social_media_hashtag" model="ir.actions.act_window">
         <field name="name">Hashtags</field>
         <field name="res_model">social.media.hashtag</field>
-        <field name="view_mode">list</field>
+        <field name="view_mode">tree</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Create your first hashtag

@@ -4,7 +4,7 @@
         <field name="name">social.media.post.list</field>
         <field name="model">social.media.post</field>
         <field name="arch" type="xml">
-            <list string="Social Media Posts" decoration-danger="state == 'failed'" decoration-muted="state == 'cancelled'">
+            <tree string="Social Media Posts" decoration-danger="state == 'failed'" decoration-muted="state == 'cancelled'">
                 <field name="name"/>
                 <field name="account_id"/>
                 <field name="platform"/>
@@ -12,7 +12,7 @@
                 <field name="scheduled_date"/>
                 <field name="state" widget="badge" decoration-success="state == 'published'" decoration-danger="state == 'failed'" decoration-info="state == 'scheduled'" decoration-warning="state == 'pending_approval'"/>
                 <field name="engagement_count" sum="Total"/>
-            </list>
+            </tree>
         </field>
     </record>
 
@@ -104,6 +104,7 @@
                             <field name="account_id"/>
                             <field name="platform" invisible="1"/>
                             <field name="char_limit" invisible="1"/>
+                            <field name="over_char_limit" invisible="1"/>
                             <field name="campaign_id"/>
                             <field name="template_id"/>
                             <field name="company_id" groups="base.group_multi_company" readonly="1"/>
@@ -271,7 +272,7 @@
     <record id="action_social_media_post" model="ir.actions.act_window">
         <field name="name">Posts</field>
         <field name="res_model">social.media.post</field>
-        <field name="view_mode">kanban,list,calendar,pivot,graph,form</field>
+        <field name="view_mode">kanban,tree,calendar,pivot,graph,form</field>
         <field name="context">{'search_default_group_state': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
@@ -286,7 +287,7 @@
     <record id="action_social_media_post_report" model="ir.actions.act_window">
         <field name="name">Post Performance</field>
         <field name="res_model">social.media.post</field>
-        <field name="view_mode">graph,pivot,list</field>
+        <field name="view_mode">graph,pivot,tree</field>
         <field name="domain">[('state', '=', 'published')]</field>
         <field name="context">{'search_default_group_platform': 1}</field>
     </record>

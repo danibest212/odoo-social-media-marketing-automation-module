@@ -95,7 +95,7 @@ class SocialMediaAccount(models.Model):
             'name': self.name,
             'type': 'ir.actions.act_window',
             'res_model': 'social.media.post',
-            'view_mode': 'list,form,calendar,kanban',
+            'view_mode': 'tree,form,calendar,kanban',
             'domain': [('account_id', '=', self.id)],
             'context': {'default_account_id': self.id},
         }
