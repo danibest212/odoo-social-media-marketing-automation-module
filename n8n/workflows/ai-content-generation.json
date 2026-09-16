@@ -1,0 +1,108 @@
+{
+  "name": "Social Media - AI Content Generation",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Setup\n1. Import this workflow, then activate it.\n2. Copy the Webhook node's **Production URL** into Odoo (Social Marketing > Configuration > Automation Settings > \"n8n AI Content Webhook URL\").\n3. Add an **HTTP Header Auth** credential named `Anthropic API Key` on the \"Call Claude\" node with header name `x-api-key` and your Anthropic API key as the value.\n4. In Odoo, the same *Shared API Key* you saved in Automation Settings is sent back to Odoo automatically as the `X-Api-Key` header when this workflow reports its result — no extra n8n credential needed for that part.\n\nOdoo calls this webhook when a user clicks **Generate with AI** on a post, with body: `{post_id, platform, account_handle, brief, callback_url, api_key}`.",
+        "height": 420,
+        "width": 380
+      },
+      "id": "sticky-1",
+      "name": "Setup Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-380, 60]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "social-media-generate-content",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "webhook-1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-160, 260],
+      "webhookId": "social-media-generate-content"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "content-type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: \"claude-sonnet-5\", max_tokens: 500, messages: [ { role: \"user\", content: `Write one ${$json.body.platform} social media post for the account \"${$json.body.account_handle}\". Brief: ${$json.body.brief}. Respond with ONLY valid JSON in this exact shape, no markdown fences, no extra text: {\"message\": \"the post text\", \"hashtags\": [\"tag1\", \"tag2\"]}` } ] }) }}",
+        "options": {},
+        "continueOnFail": true
+      },
+      "id": "http-claude-1",
+      "name": "Call Claude (Anthropic API)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [80, 260],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_ME",
+          "name": "Anthropic API Key"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const webhookBody = $('Webhook').item.json.body;\nconst current = $input.item.json;\n\nif (current.error) {\n  return [{\n    json: {\n      callback_url: webhookBody.callback_url,\n      api_key: webhookBody.api_key,\n      success: false,\n      error: String(current.error.message || current.error),\n    },\n  }];\n}\n\nlet parsed;\ntry {\n  const text = current.content[0].text;\n  parsed = JSON.parse(text);\n} catch (e) {\n  return [{\n    json: {\n      callback_url: webhookBody.callback_url,\n      api_key: webhookBody.api_key,\n      success: false,\n      error: `Could not parse AI response as JSON: ${e.message}`,\n    },\n  }];\n}\n\nreturn [{\n  json: {\n    callback_url: webhookBody.callback_url,\n    api_key: webhookBody.api_key,\n    success: true,\n    message: parsed.message,\n    hashtags: parsed.hashtags || [],\n  },\n}];"
+      },
+      "id": "code-build-result-1",
+      "name": "Build Result Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [320, 260]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.callback_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-Api-Key", "value": "={{ $json.api_key }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ success: $json.success, message: $json.message, hashtags: $json.hashtags, error: $json.error }) }}",
+        "options": {}
+      },
+      "id": "http-send-result-1",
+      "name": "Send Result to Odoo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [560, 260]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Call Claude (Anthropic API)", "type": "main", "index": 0 }]]
+    },
+    "Call Claude (Anthropic API)": {
+      "main": [[{ "node": "Build Result Payload", "type": "main", "index": 0 }]]
+    },
+    "Build Result Payload": {
+      "main": [[{ "node": "Send Result to Odoo", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}

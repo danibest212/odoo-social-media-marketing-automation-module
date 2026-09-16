@@ -11,3 +11,4 @@ access_social_media_hashtag_user,social.media.hashtag.user,model_social_media_ha
 access_social_media_hashtag_manager,social.media.hashtag.manager,model_social_media_hashtag,group_social_media_manager,1,1,1,1
 access_social_media_template_user,social.media.template.user,model_social_media_template,group_social_media_user,1,0,0,0
 access_social_media_template_manager,social.media.template.manager,model_social_media_template,group_social_media_manager,1,1,1,1
+access_social_media_automation_settings_manager,social.media.automation.settings.manager,model_social_media_automation_settings,group_social_media_manager,1,1,1,1

@@ -69,4 +69,12 @@
         action="social_media_marketing_automation.action_social_media_hashtag"
         sequence="30"
     />
+
+    <menuitem
+        id="menu_social_media_automation_settings"
+        name="Automation Settings"
+        parent="menu_social_media_configuration"
+        action="social_media_marketing_automation.action_social_media_automation_settings"
+        sequence="40"
+    />
 </odoo>

@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 import logging
 
+import requests
+
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, UserError
 
 _logger = logging.getLogger(__name__)
 
 MANAGER_GROUP = 'social_media_marketing_automation.group_social_media_manager'
+PARAM_AI_WEBHOOK_URL = 'social_media_marketing_automation.n8n_ai_webhook_url'
+PARAM_API_KEY = 'social_media_marketing_automation.api_key'
 
 
 class SocialMediaPost(models.Model):
@@ -51,6 +55,24 @@ class SocialMediaPost(models.Model):
     approved_by = fields.Many2one('res.users', string='Approved By', readonly=True)
     approved_date = fields.Datetime(string='Approved Date', readonly=True)
     error_message = fields.Text(readonly=True)
+
+    ai_brief = fields.Text(
+        string='AI Brief',
+        help='Describe what you want the AI to write about; sent to n8n as the '
+             'generation prompt when you click "Generate with AI".',
+    )
+    ai_content_status = fields.Selection(
+        [
+            ('none', 'Not Requested'),
+            ('requested', 'Requested'),
+            ('received', 'Received'),
+            ('failed', 'Failed'),
+        ],
+        string='AI Content Status',
+        default='none',
+        readonly=True,
+        tracking=True,
+    )
 
     message_length = fields.Integer(string='Characters', compute='_compute_message_length')
     over_char_limit = fields.Boolean(string='Over Limit', compute='_compute_message_length')
@@ -143,6 +165,32 @@ class SocialMediaPost(models.Model):
     def action_publish_now(self):
         self._publish()
 
+    def action_request_ai_content(self):
+        self.ensure_one()
+        get_param = self.env['ir.config_parameter'].sudo().get_param
+        webhook_url = get_param(PARAM_AI_WEBHOOK_URL)
+        api_key = get_param(PARAM_API_KEY)
+        if not webhook_url or not api_key:
+            raise UserError(_(
+                'Configure the n8n AI webhook URL and shared API key first, under '
+                'Social Marketing > Configuration > Automation Settings.'
+            ))
+        base_url = get_param('web.base.url')
+        payload = {
+            'post_id': self.id,
+            'platform': self.platform,
+            'account_handle': self.account_id.handle,
+            'brief': self.ai_brief or self.message,
+            'callback_url': '%s/social_media/webhook/posts/%s/ai-content' % (base_url, self.id),
+            'api_key': api_key,
+        }
+        try:
+            response = requests.post(webhook_url, json=payload, timeout=10)
+            response.raise_for_status()
+        except requests.RequestException as exc:
+            raise UserError(_('Could not reach the n8n webhook: %s') % exc)
+        self.ai_content_status = 'requested'
+
     def action_duplicate(self):
         self.ensure_one()
         new_post = self.copy()
@@ -162,6 +210,7 @@ class SocialMediaPost(models.Model):
         default.setdefault('error_message', False)
         default.setdefault('approved_by', False)
         default.setdefault('approved_date', False)
+        default.setdefault('ai_content_status', 'none')
         default.setdefault('like_count', 0)
         default.setdefault('comment_count', 0)
         default.setdefault('share_count', 0)

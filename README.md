@@ -35,6 +35,11 @@ TikTok, YouTube) from a single place.
 - **Views** — Kanban pipeline (grouped by status), a content calendar,
   pivot/graph performance reporting, list and form views, with
   chatter/activity tracking on posts and campaigns.
+- **n8n automation** — API-key-secured webhooks so an [n8n](https://n8n.io)
+  instance can (1) generate a post's message/hashtags with AI and send them
+  back, and (2) auto-publish due posts to the real platform APIs and report
+  the result. See [n8n/README.md](n8n/README.md) for the ready-to-import
+  workflow templates and full setup.
 
 ## Installation
 
@@ -60,6 +65,25 @@ To publish to a real platform:
    which currently raises `NotImplementedError` outside of test mode as a
    placeholder for that integration.
 
+## n8n automation
+
+Two extra automations are available once you configure an
+[n8n](https://n8n.io) instance under **Social Marketing → Configuration →
+Automation Settings** (Manager only):
+
+- **Generate with AI** — a button on any post that asks n8n (which calls an
+  AI provider, e.g. Claude) to draft the message and hashtags, then writes
+  the result back onto the post.
+- **Auto-publish across all platforms** — an alternative to (or replacement
+  for) the built-in cron: n8n polls Odoo for due posts, calls each
+  platform's real API, and reports the result back.
+
+Both directions are authenticated with a single shared API key (sent as the
+`X-Api-Key` header) rather than an Odoo login — see
+[n8n/README.md](n8n/README.md) for the webhook endpoints, the workflow
+templates in `n8n/workflows/`, and setup steps. Treat that key like a
+password: only expose these endpoints over HTTPS.
+
 ## Security
 
 Two groups are provided under the **Social Marketing** category:
@@ -67,8 +91,14 @@ Two groups are provided under the **Social Marketing** category:
 - **User** — can create posts and campaigns and submit posts for approval;
   cannot schedule a post directly or approve/reject a submission.
 - **Manager** — full access to accounts, campaigns, posts, templates and
-  hashtags, including API credentials; can schedule posts directly or
+  hashtags, including API credentials and the n8n Automation Settings
+  (shared API key and webhook URL); can schedule posts directly or
   approve/reject a User's submission.
+- The `/social_media/webhook/...` routes are unauthenticated from Odoo's
+  point of view and instead rely entirely on the shared API key configured
+  in Automation Settings — leave that key blank (the default) to keep the
+  endpoints disabled, and only set it once you're ready to use n8n over
+  HTTPS.
 
 ## License
 
