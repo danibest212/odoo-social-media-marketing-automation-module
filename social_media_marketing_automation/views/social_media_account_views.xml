@@ -93,7 +93,7 @@
                 <field name="state"/>
                 <field name="post_count"/>
                 <templates>
-                    <t t-name="card">
+                    <t t-name="kanban-box">
                         <div class="oe_kanban_global_click">
                             <strong><field name="name"/></strong>
                             <div class="text-muted">
