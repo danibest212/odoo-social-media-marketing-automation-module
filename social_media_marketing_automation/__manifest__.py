@@ -1,6 +1,6 @@
 {
     'name': 'Social Media Marketing Automation',
-    'version': '17.0.1.0.0',
+    'version': '17.0.2.0.0',
     'category': 'Marketing',
     'summary': 'Plan, schedule and automate posts across social media accounts',
     'description': """
@@ -15,9 +15,12 @@ Features
 * Connect and manage multiple social media accounts per platform
 * Organize posts into marketing campaigns
 * Compose a single message and schedule it across several accounts at once
+* Reusable post templates and a hashtag library
+* Manager approval workflow before a post gets scheduled
+* Per-platform character limit warnings
 * Automatic publishing of scheduled posts via a scheduled action (cron)
 * Track publishing status and basic engagement metrics per post
-* Kanban, calendar, list and form views with chatter/activities
+* Kanban, calendar, pivot/graph and form views with chatter/activities
 """,
     'author': 'ashewainfo',
     'license': 'GPL-3',
@@ -29,6 +32,8 @@ Features
         'wizard/social_media_post_compose_views.xml',
         'views/social_media_account_views.xml',
         'views/social_media_campaign_views.xml',
+        'views/social_media_hashtag_views.xml',
+        'views/social_media_template_views.xml',
         'views/social_media_post_views.xml',
         'views/social_media_menus.xml',
     ],

@@ -2,9 +2,11 @@
 import logging
 
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessError, UserError
 
 _logger = logging.getLogger(__name__)
+
+MANAGER_GROUP = 'social_media_marketing_automation.group_social_media_manager'
 
 
 class SocialMediaPost(models.Model):
@@ -19,11 +21,17 @@ class SocialMediaPost(models.Model):
     message = fields.Text(required=True, tracking=True)
     image = fields.Image(max_width=1920, max_height=1920)
     link_url = fields.Char(string='Link')
+    template_id = fields.Many2one(
+        'social.media.template', string='Template',
+        help='Pick a template to prefill the message, image, link and hashtags below.',
+    )
+    hashtag_ids = fields.Many2many('social.media.hashtag', string='Hashtags')
     account_id = fields.Many2one(
         'social.media.account', string='Account', required=True, tracking=True,
         ondelete='cascade',
     )
     platform = fields.Selection(related='account_id.platform', store=True, readonly=True)
+    char_limit = fields.Integer(related='account_id.char_limit', readonly=True)
     company_id = fields.Many2one(related='account_id.company_id', store=True, readonly=True)
     campaign_id = fields.Many2one('social.media.campaign', string='Campaign', tracking=True)
     scheduled_date = fields.Datetime(string='Scheduled Date', tracking=True)
@@ -31,6 +39,7 @@ class SocialMediaPost(models.Model):
     state = fields.Selection(
         [
             ('draft', 'Draft'),
+            ('pending_approval', 'Pending Approval'),
             ('scheduled', 'Scheduled'),
             ('published', 'Published'),
             ('failed', 'Failed'),
@@ -39,7 +48,12 @@ class SocialMediaPost(models.Model):
         default='draft',
         tracking=True,
     )
+    approved_by = fields.Many2one('res.users', string='Approved By', readonly=True)
+    approved_date = fields.Datetime(string='Approved Date', readonly=True)
     error_message = fields.Text(readonly=True)
+
+    message_length = fields.Integer(string='Characters', compute='_compute_message_length')
+    over_char_limit = fields.Boolean(string='Over Limit', compute='_compute_message_length')
 
     like_count = fields.Integer(string='Likes', readonly=True)
     comment_count = fields.Integer(string='Comments', readonly=True)
@@ -62,11 +76,63 @@ class SocialMediaPost(models.Model):
                 post.like_count + post.comment_count + post.share_count + post.click_count
             )
 
-    def action_schedule(self):
+    @api.depends('message', 'account_id.char_limit')
+    def _compute_message_length(self):
+        for post in self:
+            length = len(post.message or '')
+            post.message_length = length
+            post.over_char_limit = bool(post.account_id.char_limit) and length > post.account_id.char_limit
+
+    @api.onchange('template_id')
+    def _onchange_template_id(self):
+        if self.template_id:
+            self.message = self.template_id.message
+            self.image = self.template_id.image
+            self.link_url = self.template_id.link_url
+            self.hashtag_ids = self.template_id.hashtag_ids
+
+    def action_insert_hashtags(self):
+        for post in self:
+            if not post.hashtag_ids:
+                continue
+            hashtag_text = ' '.join('#%s' % h.name for h in post.hashtag_ids)
+            post.message = '%s\n\n%s' % (post.message or '', hashtag_text)
+
+    def _check_scheduled_date(self):
         for post in self:
             if not post.scheduled_date:
                 raise UserError(_('Set a scheduled date before scheduling "%s".') % post.name)
+
+    def action_submit_for_approval(self):
+        self._check_scheduled_date()
+        self.write({'state': 'pending_approval', 'error_message': False})
+
+    def _check_manager(self):
+        if not self.env.user.has_group(MANAGER_GROUP):
+            raise AccessError(_('Only a Social Marketing Manager can perform this action.'))
+
+    def action_schedule(self):
+        """Manager fast-path: schedule immediately, bypassing approval."""
+        self._check_manager()
+        self._check_scheduled_date()
         self.write({'state': 'scheduled', 'error_message': False})
+
+    def action_approve(self):
+        self._check_manager()
+        self._check_scheduled_date()
+        self.write(
+            {
+                'state': 'scheduled',
+                'approved_by': self.env.user.id,
+                'approved_date': fields.Datetime.now(),
+                'error_message': False,
+            }
+        )
+
+    def action_reject(self):
+        self._check_manager()
+        self.write({'state': 'draft'})
+        self.message_post(body=_('Post submission was rejected and reset to draft.'))
 
     def action_reset_to_draft(self):
         self.write({'state': 'draft', 'error_message': False})
@@ -76,6 +142,31 @@ class SocialMediaPost(models.Model):
 
     def action_publish_now(self):
         self._publish()
+
+    def action_duplicate(self):
+        self.ensure_one()
+        new_post = self.copy()
+        return {
+            'name': _('Post (copy)'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'social.media.post',
+            'view_mode': 'form',
+            'res_id': new_post.id,
+        }
+
+    def copy(self, default=None):
+        default = dict(default or {})
+        default.setdefault('state', 'draft')
+        default.setdefault('scheduled_date', False)
+        default.setdefault('published_date', False)
+        default.setdefault('error_message', False)
+        default.setdefault('approved_by', False)
+        default.setdefault('approved_date', False)
+        default.setdefault('like_count', 0)
+        default.setdefault('comment_count', 0)
+        default.setdefault('share_count', 0)
+        default.setdefault('click_count', 0)
+        return super().copy(default)
 
     def _publish(self):
         """Attempt to publish each post via its account's API integration."""

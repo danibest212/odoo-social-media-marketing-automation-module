@@ -10,7 +10,7 @@
                 <field name="platform"/>
                 <field name="campaign_id"/>
                 <field name="scheduled_date"/>
-                <field name="state" widget="badge" decoration-success="state == 'published'" decoration-danger="state == 'failed'" decoration-info="state == 'scheduled'"/>
+                <field name="state" widget="badge" decoration-success="state == 'published'" decoration-danger="state == 'failed'" decoration-info="state == 'scheduled'" decoration-warning="state == 'pending_approval'"/>
                 <field name="engagement_count" sum="Total"/>
             </list>
         </field>
@@ -23,11 +23,34 @@
             <form string="Social Media Post">
                 <header>
                     <button
+                        name="action_submit_for_approval"
+                        string="Submit for Approval"
+                        type="object"
+                        class="oe_highlight"
+                        invisible="state != 'draft'"
+                    />
+                    <button
                         name="action_schedule"
                         string="Schedule"
                         type="object"
                         class="oe_highlight"
-                        invisible="state != 'draft'"
+                        groups="social_media_marketing_automation.group_social_media_manager"
+                        invisible="state not in ('draft', 'pending_approval')"
+                    />
+                    <button
+                        name="action_approve"
+                        string="Approve"
+                        type="object"
+                        class="oe_highlight"
+                        groups="social_media_marketing_automation.group_social_media_manager"
+                        invisible="state != 'pending_approval'"
+                    />
+                    <button
+                        name="action_reject"
+                        string="Reject"
+                        type="object"
+                        groups="social_media_marketing_automation.group_social_media_manager"
+                        invisible="state != 'pending_approval'"
                     />
                     <button
                         name="action_publish_now"
@@ -40,7 +63,7 @@
                         name="action_reset_to_draft"
                         string="Reset to Draft"
                         type="object"
-                        invisible="state not in ('scheduled', 'failed', 'cancelled')"
+                        invisible="state not in ('pending_approval', 'scheduled', 'failed', 'cancelled')"
                     />
                     <button
                         name="action_cancel"
@@ -48,13 +71,23 @@
                         type="object"
                         invisible="state in ('published', 'cancelled')"
                     />
+                    <button
+                        name="action_duplicate"
+                        string="Duplicate"
+                        type="object"
+                    />
                     <field
                         name="state"
                         widget="statusbar"
-                        statusbar_visible="draft,scheduled,published"
+                        statusbar_visible="draft,pending_approval,scheduled,published"
                     />
                 </header>
                 <sheet>
+                    <div class="alert alert-warning" role="alert" invisible="not over_char_limit">
+                        This message is <field name="message_length" nolabel="1"/> characters,
+                        over the <field name="char_limit" nolabel="1"/> character guideline for
+                        this platform.
+                    </div>
                     <div class="oe_title">
                         <h1>
                             <field name="name" placeholder="Post title"/>
@@ -64,18 +97,37 @@
                         <group>
                             <field name="account_id"/>
                             <field name="platform" invisible="1"/>
+                            <field name="char_limit" invisible="1"/>
                             <field name="campaign_id"/>
+                            <field name="template_id"/>
                             <field name="company_id" groups="base.group_multi_company" readonly="1"/>
                         </group>
                         <group>
                             <field name="scheduled_date"/>
                             <field name="published_date" invisible="not published_date"/>
+                            <field name="approved_by" invisible="not approved_by"/>
+                            <field name="approved_date" invisible="not approved_date"/>
                         </group>
                     </group>
                     <group>
                         <field name="message" placeholder="What do you want to share?"/>
                         <field name="image" widget="image" class="oe_avatar"/>
                         <field name="link_url" widget="url"/>
+                        <label for="hashtag_ids"/>
+                        <div>
+                            <field
+                                name="hashtag_ids"
+                                widget="many2many_tags"
+                                options="{'color_field': 'color'}"
+                            />
+                            <button
+                                name="action_insert_hashtags"
+                                string="Insert Hashtags into Message"
+                                type="object"
+                                class="btn-link"
+                                invisible="not hashtag_ids"
+                            />
+                        </div>
                     </group>
                     <group string="Error" invisible="state != 'failed'">
                         <field name="error_message" readonly="1" nolabel="1" colspan="2"/>
@@ -145,6 +197,33 @@
         </field>
     </record>
 
+    <record id="view_social_media_post_pivot" model="ir.ui.view">
+        <field name="name">social.media.post.pivot</field>
+        <field name="model">social.media.post</field>
+        <field name="arch" type="xml">
+            <pivot string="Post Performance">
+                <field name="account_id" type="row"/>
+                <field name="state" type="col"/>
+                <field name="engagement_count" type="measure"/>
+                <field name="like_count" type="measure"/>
+                <field name="comment_count" type="measure"/>
+                <field name="share_count" type="measure"/>
+                <field name="click_count" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_social_media_post_graph" model="ir.ui.view">
+        <field name="name">social.media.post.graph</field>
+        <field name="model">social.media.post</field>
+        <field name="arch" type="xml">
+            <graph string="Post Performance" type="bar">
+                <field name="platform" type="row"/>
+                <field name="engagement_count" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
     <record id="view_social_media_post_search" model="ir.ui.view">
         <field name="name">social.media.post.search</field>
         <field name="model">social.media.post</field>
@@ -155,6 +234,7 @@
                 <field name="campaign_id"/>
                 <field name="message"/>
                 <filter string="Draft" name="draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Pending Approval" name="pending_approval" domain="[('state', '=', 'pending_approval')]"/>
                 <filter string="Scheduled" name="scheduled" domain="[('state', '=', 'scheduled')]"/>
                 <filter string="Published" name="published" domain="[('state', '=', 'published')]"/>
                 <filter string="Failed" name="failed" domain="[('state', '=', 'failed')]"/>
@@ -177,7 +257,7 @@
     <record id="action_social_media_post" model="ir.actions.act_window">
         <field name="name">Posts</field>
         <field name="res_model">social.media.post</field>
-        <field name="view_mode">kanban,list,calendar,form</field>
+        <field name="view_mode">kanban,list,calendar,pivot,graph,form</field>
         <field name="context">{'search_default_group_state': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
@@ -187,5 +267,13 @@
                 Draft a message, schedule it and let the automation publish it for you.
             </p>
         </field>
+    </record>
+
+    <record id="action_social_media_post_report" model="ir.actions.act_window">
+        <field name="name">Post Performance</field>
+        <field name="res_model">social.media.post</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="domain">[('state', '=', 'published')]</field>
+        <field name="context">{'search_default_group_platform': 1}</field>
     </record>
 </odoo>

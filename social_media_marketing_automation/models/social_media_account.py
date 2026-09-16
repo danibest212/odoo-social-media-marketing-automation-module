@@ -5,6 +5,18 @@ from odoo import api, fields, models
 
 _logger = logging.getLogger(__name__)
 
+# Approximate public character limits per platform, used to warn users before
+# they schedule an over-long post. Not enforced server-side: platforms may
+# change these, so it is advisory only.
+PLATFORM_CHAR_LIMITS = {
+    'facebook': 63206,
+    'instagram': 2200,
+    'twitter': 280,
+    'linkedin': 3000,
+    'tiktok': 2200,
+    'youtube': 5000,
+}
+
 
 class SocialMediaAccount(models.Model):
     _name = 'social.media.account'
@@ -54,6 +66,12 @@ class SocialMediaAccount(models.Model):
     )
     post_ids = fields.One2many('social.media.post', 'account_id', string='Posts')
     post_count = fields.Integer(compute='_compute_post_count')
+    char_limit = fields.Integer(compute='_compute_char_limit', store=True)
+
+    @api.depends('platform')
+    def _compute_char_limit(self):
+        for account in self:
+            account.char_limit = PLATFORM_CHAR_LIMITS.get(account.platform, 0)
 
     @api.depends('post_ids')
     def _compute_post_count(self):

@@ -6,9 +6,11 @@
         <field name="arch" type="xml">
             <form string="Compose Social Media Post">
                 <group>
+                    <field name="template_id"/>
                     <field name="message" placeholder="What do you want to share?"/>
                     <field name="image" widget="image" class="oe_avatar"/>
                     <field name="link_url" placeholder="https://..."/>
+                    <field name="hashtag_ids" widget="many2many_tags" options="{'color_field': 'color'}"/>
                     <field name="campaign_id"/>
                     <field name="account_ids" widget="many2many_tags"/>
                     <field name="scheduled_date"/>

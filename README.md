@@ -13,16 +13,28 @@ TikTok, YouTube) from a single place.
   date range and status (Draft / In Progress / Done / Cancelled).
 - **Posts** — a message, image and optional link, scheduled for a specific
   date/time on a specific account, with a state machine
-  (Draft → Scheduled → Published / Failed / Cancelled) and basic
-  engagement tracking (likes, comments, shares, clicks).
+  (Draft → Pending Approval → Scheduled → Published / Failed / Cancelled)
+  and basic engagement tracking (likes, comments, shares, clicks).
 - **Compose wizard** — write one message and fan it out as individual
   posts across several accounts at once.
+- **Templates** — save recurring message/image/link/hashtag combinations
+  and reuse them from the compose wizard or directly on a post.
+- **Hashtag library** — a reusable, colour-tagged set of hashtags you can
+  attach to templates or posts and insert into the message with one click.
+- **Approval workflow** — regular Users submit a scheduled post for
+  approval; a Social Marketing Manager approves (schedules it) or rejects
+  it (back to draft) — or a Manager can schedule directly, bypassing
+  approval.
+- **Character limit warnings** — each post shows a live character count
+  and a warning banner if the message exceeds the target platform's
+  approximate limit.
+- **Duplicate** — clone any post (as a fresh Draft) from its form view.
 - **Automation** — a scheduled action (`ir.cron`) runs every 15 minutes and
   publishes any post whose scheduled time has arrived, recording the result
   (published, or failed with the error message) on the post.
 - **Views** — Kanban pipeline (grouped by status), a content calendar,
-  list and form views, with chatter/activity tracking on posts and
-  campaigns.
+  pivot/graph performance reporting, list and form views, with
+  chatter/activity tracking on posts and campaigns.
 
 ## Installation
 
@@ -52,9 +64,11 @@ To publish to a real platform:
 
 Two groups are provided under the **Social Marketing** category:
 
-- **User** — can create, schedule and publish posts and campaigns.
-- **Manager** — full access to accounts, campaigns and posts, including
-  API credentials.
+- **User** — can create posts and campaigns and submit posts for approval;
+  cannot schedule a post directly or approve/reject a submission.
+- **Manager** — full access to accounts, campaigns, posts, templates and
+  hashtags, including API credentials; can schedule posts directly or
+  approve/reject a User's submission.
 
 ## License
 

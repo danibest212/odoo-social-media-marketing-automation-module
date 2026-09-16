@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_social_media_hashtag_list" model="ir.ui.view">
+        <field name="name">social.media.hashtag.list</field>
+        <field name="model">social.media.hashtag</field>
+        <field name="arch" type="xml">
+            <list string="Hashtags" editable="bottom">
+                <field name="name"/>
+                <field name="color" widget="color_picker"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_social_media_hashtag" model="ir.actions.act_window">
+        <field name="name">Hashtags</field>
+        <field name="res_model">social.media.hashtag</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first hashtag
+            </p>
+            <p>
+                Build a reusable hashtag library to attach to posts and templates.
+            </p>
+        </field>
+    </record>
+</odoo>

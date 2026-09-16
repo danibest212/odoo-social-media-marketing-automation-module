@@ -21,6 +21,20 @@
         <field name="state">disconnected</field>
     </record>
 
+    <record id="demo_hashtag_launch" model="social.media.hashtag">
+        <field name="name">ProductLaunch</field>
+    </record>
+
+    <record id="demo_hashtag_brand" model="social.media.hashtag">
+        <field name="name">AcmeInc</field>
+    </record>
+
+    <record id="demo_template_launch" model="social.media.template">
+        <field name="name">Launch Announcement</field>
+        <field name="message">We're excited to announce our newest product line!</field>
+        <field name="hashtag_ids" eval="[(6, 0, [ref('demo_hashtag_launch'), ref('demo_hashtag_brand')])]"/>
+    </record>
+
     <record id="demo_campaign_launch" model="social.media.campaign">
         <field name="name">Product Launch</field>
         <field name="date_start" eval="(datetime.today()).strftime('%Y-%m-%d')"/>
@@ -32,7 +46,9 @@
     <record id="demo_post_published_1" model="social.media.post">
         <field name="account_id" ref="demo_account_facebook"/>
         <field name="campaign_id" ref="demo_campaign_launch"/>
+        <field name="template_id" ref="demo_template_launch"/>
         <field name="message">We're excited to announce our newest product line! #launch</field>
+        <field name="hashtag_ids" eval="[(6, 0, [ref('demo_hashtag_launch'), ref('demo_hashtag_brand')])]"/>
         <field name="state">published</field>
         <field name="scheduled_date" eval="(datetime.today() - relativedelta(days=2)).strftime('%Y-%m-%d %H:%M:%S')"/>
         <field name="published_date" eval="(datetime.today() - relativedelta(days=2)).strftime('%Y-%m-%d %H:%M:%S')"/>
@@ -55,5 +71,13 @@
         <field name="campaign_id" ref="demo_campaign_launch"/>
         <field name="message">Draft: customer testimonial round-up, needs review before scheduling.</field>
         <field name="state">draft</field>
+    </record>
+
+    <record id="demo_post_pending_approval_1" model="social.media.post">
+        <field name="account_id" ref="demo_account_instagram"/>
+        <field name="campaign_id" ref="demo_campaign_launch"/>
+        <field name="message">Limited-time launch discount for our newsletter subscribers!</field>
+        <field name="state">pending_approval</field>
+        <field name="scheduled_date" eval="(datetime.today() + relativedelta(days=2)).strftime('%Y-%m-%d %H:%M:%S')"/>
     </record>
 </odoo>
